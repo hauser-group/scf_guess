@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scf_guess"
+version = "0.0.1"
+authors = [
+  { name="Ralf Meyer", email="meyer.ralf@yahoo.com" },
+]
+description = "Improved initial guesses for SCF calculations"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "psi4==1.9.1",
+]
+
+
+[project.optional-dependencies]
+tests = [
+  "pytest",
+  "pytest-cov",
+  "pytest-resource-path",
+]
+
+[tool.setuptools]
+packages = ["scf_guess"]
