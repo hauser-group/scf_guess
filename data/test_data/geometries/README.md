@@ -29,3 +29,7 @@ from vanLenthe2006.
 
 2019-01-16
 Susi Lehtola
+
+> [!NOTE]  
+> I have "removed" the duplicate TMCs from Buhl2006 listed in Section
+> 3.1 of Lehtola2019 by changing their file extension to `._xyz`.  
