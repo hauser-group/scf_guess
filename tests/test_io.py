@@ -14,6 +14,11 @@ O         -0.77879        1.34891       -0.55068
         fout.write(xyz_string)
 
     mol = load_molecule(tmp_path / "test.xyz")
-    print(mol.print_out_in_bohr())
     assert mol.molecular_charge() == -2
     assert mol.multiplicity() == 1
+    assert mol.irrep_labels() == ["Ap", "App"]
+    assert mol.point_group().symbol() == "cs"
+
+    mol = load_molecule(tmp_path / "test.xyz", disable_symmetry=True)
+    assert mol.irrep_labels() == ["A"]
+    assert mol.point_group().symbol() == "c1"
