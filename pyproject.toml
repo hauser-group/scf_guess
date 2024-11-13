@@ -23,7 +23,7 @@ dependencies = [
 
 
 [project.optional-dependencies]
-tests = [
+dev = [
   "pytest",
   "pytest-cov",
   "pytest-resource-path",

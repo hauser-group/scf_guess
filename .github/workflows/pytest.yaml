@@ -39,7 +39,7 @@ jobs:
 
     - name: Install package
       run: |
-        pip install -e . --no-deps
+        pip install -e .[dev]
         conda list
 
     - name: Run tests

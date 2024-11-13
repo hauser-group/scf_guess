@@ -4,5 +4,3 @@ channels:
   - defaults
 dependencies:
   - psi4=1.9.1
-  - pip:
-      - pytest
