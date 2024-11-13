@@ -1,0 +1,56 @@
+name: Pytest
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  pytest_conda:
+    name: Pytest (conda) on ${{ matrix.os }}, Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.12"]
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Additional info about the build
+      run: |
+        uname -a
+        df -h
+        ulimit -a
+    # More info on the whole conda setup: https://github.com/conda-incubator/setup-miniconda
+    - name: Setup Conda
+      uses: conda-incubator/setup-miniconda@v3
+      id: conda-setup
+      with:
+        # mamba-version: "*" # uncomment to activate mamba
+        python-version: ${{ matrix.python-version }}
+        environment-file: dev/environments/test.yaml
+        activate-environment: anaconda-client-env          
+
+    - name: Install package
+      run: |
+        pip install -e . --no-deps
+        conda list
+
+    - name: Run tests
+      run: |
+        pytest -v --cov=scf_guess --cov-report=xml
+
+    - name: Run doctest
+      run: |
+        pytest --doctest-modules
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4.0.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
