@@ -1,5 +1,6 @@
 import os
 import re
+import importlib.resources
 
 from psi4.core import Molecule
 from glob import iglob
@@ -27,7 +28,8 @@ def load_molecule(path: str, disable_symmetry: bool = False) -> Molecule:
 
 
 def load(disable_symmetry: bool = False) -> tuple[list[Molecule], list[Molecule]]:
-    paths = iglob("geometries/**/*.xyz", recursive=True)
+    base_path = importlib.resources.files(__package__) / "geometries"
+    paths = iglob(f"{base_path}/**/*.xyz", recursive=True)
 
     molecules = [load_molecule(path, disable_symmetry=disable_symmetry) for path in paths]
     singlets, non_singlets = [], []

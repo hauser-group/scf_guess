@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import importlib.resources
 
 from collections import defaultdict
 
@@ -44,8 +45,10 @@ tables = {
 
 
 def load_table(theory_level: str, basis_set: str, variant: str) -> pd.DataFrame:
+    base_path = importlib.resources.files(__package__) / "scores" / "tables"
     identifier = tables[theory_level][basis_set][variant]
-    table = pd.read_csv(f"scores/tables/{identifier}.txt", skiprows=1, sep=r"\s+")
+
+    table = pd.read_csv(f"{base_path}/{identifier}.txt", skiprows=1, sep=r"\s+")
 
     table.set_index("Molecule", inplace=True)
     table.drop("Best", inplace=True)
