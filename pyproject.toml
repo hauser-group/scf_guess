@@ -32,4 +32,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["scf_guess"]
+packages = [
+    "scf_guess",
+    "lehtola_2019"
+]
