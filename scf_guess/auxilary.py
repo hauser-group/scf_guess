@@ -3,19 +3,26 @@ import psi4
 
 from contextlib import contextmanager
 from filecache import filecache
+from tempfile import TemporaryDirectory
 
 
 @contextmanager
 def clean_context():
     with psi4.driver.p4util.hold_options_state():
-        try:
-            psi4.core.clean_options()
-            psi4.core.clean()
+        with TemporaryDirectory() as tmp:
+            try:
+                psi4.core.clean_options()
+                psi4.core.clean()
 
-            yield
-        finally:
-            psi4.core.clean_options()
-            psi4.core.clean()
+                stdout_file = f"{tmp}/stdout"  # don't rename, bug with READ option
+                psi4.extras.set_output_file(stdout_file)
+
+                yield stdout_file
+            finally:
+                psi4.core.clean_options()
+                psi4.core.clean()
+                psi4.core.close_outfile()
+                #psi4.core.set_output_file("/dev/stdout", False)
 
 
 class Cacheable:
@@ -32,11 +39,14 @@ class Cacheable:
 
     def __getstate__(self):
         if issubclass(self._class, psi4.core.Molecule):
-            return self._class, (self._instance.to_string("xyz+"), self._instance.name())
+            with clean_context():
+                return self._class, (self._instance.to_string("xyz+"), self._instance.name())
         elif issubclass(self._class, psi4.core.Wavefunction):
-            return self._class, self._instance.to_file()
+            with clean_context():
+                return self._class, self._instance.to_file()
         elif issubclass(self._class, psi4.core.Matrix):
-            return self._class, self._instance.to_serial()
+            with clean_context():
+                return self._class, self._instance.to_serial()
         else:
             return self._class, self._instance
 
@@ -44,11 +54,14 @@ class Cacheable:
         self._class, serialized = state
 
         if issubclass(self._class, psi4.core.Molecule):
-            self._instance = psi4.core.Molecule.from_string(serialized[0], name=serialized[1], dtype="xyz+")
+            with clean_context():
+                self._instance = psi4.core.Molecule.from_string(serialized[0], name=serialized[1], dtype="xyz+")
         elif issubclass(self._class, psi4.core.Wavefunction):
-            self._instance = psi4.core.Wavefunction.from_file(serialized)
+            with clean_context():
+                self._instance = psi4.core.Wavefunction.from_file(serialized)
         elif issubclass(self._class, psi4.core.Matrix):
-            self._instance = psi4.core.Matrix.from_serial(serialized)
+            with clean_context():
+                self._instance = psi4.core.Matrix.from_serial(serialized)
         else:
             self._instance = serialized
 
@@ -60,14 +73,18 @@ def file_cache(expires: int = 60 * 60 * 24 * 365):
         @filecache(seconds_of_validity=expires)
         def caller(cacheables):
             originals = {key: cacheable.instance for key, cacheable in cacheables.items()}
-            return Cacheable(function(**originals))
+            results = function(**originals)
+
+            return tuple(Cacheable(r) for r in results) if isinstance(results, tuple) else Cacheable(results)
 
         def wrapper(*args, **kwargs):
             arguments = signature.bind(*args, **kwargs)
             arguments.apply_defaults()
 
             cacheables = {key: Cacheable(value) for key, value in arguments.arguments.items()}
-            return caller(cacheables).instance
+            results = caller(cacheables)
+
+            return tuple(r.instance for r in results) if isinstance(results, tuple) else results.instance
 
         return wrapper
 
