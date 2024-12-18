@@ -12,6 +12,9 @@ if __name__ == "__main__":
     psi4.core.clean_options()
     psi4.core.be_quiet()
 
+    psi4.set_memory("20 GB")
+    psi4.set_num_threads(8)
+
     theory_level = "HF"
     basis_set = "pcseg-0"
 

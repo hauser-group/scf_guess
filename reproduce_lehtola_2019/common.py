@@ -1,32 +1,20 @@
 import numpy as np
 import pandas as pd
 
-from psi4.core import Molecule, Matrix
-from scf_guess.metrics import f_score
-from lehtola_2019.molecules import load
+from psi4.core import Molecule
+from lehtola_2019.molecules import load_molecules
+from scf_guess.molecule import singlet, non_singlet, non_charged
 from scf_guess.wavefunction import calculate_wavefunction, guess_wavefunction
 from scf_guess.auxilary import file_cache
+from scf_guess.metrics import f_score
 from collections import defaultdict
 
 
-def get_guess(molecule: Molecule, guess: str, basis_set: str):
-    wavefunction = guess_wavefunction(molecule, guess=guess, basis_set=basis_set)
-    return wavefunction.Da_subset("AO").np, wavefunction.Db_subset("AO").np
-
-
-def get_reference(molecule: Molecule, theory_level: str, guess: str, basis_set: str):
-    wavefunction = calculate_wavefunction(molecule, theory_level=theory_level,  guess=guess, basis_set=basis_set)
-    Da, Db = wavefunction.Da_subset("AO").np, wavefunction.Db_subset("AO").np
-    S = Matrix(*Da.shape)
-    S.remove_symmetry(wavefunction.S(), wavefunction.aotoso().transpose())
-    return Da, Db, S
-
-
 @file_cache()
-def score_molecule(mol, theory_level, guess, basis_set) -> float:
-    Da_guess, Db_guess = get_guess(mol, guess=guess, basis_set=basis_set)
-    Da_scf, Db_scf, S = get_reference(mol, theory_level=theory_level, guess="SAP", basis_set=basis_set)
-    return f_score(Matrix.from_array(S), Da_scf, Da_guess, Db_scf, Db_guess)
+def score_molecule(molecule: Molecule, theory: str, guess: str, basis: str) -> float:
+    guess = guess_wavefunction(molecule, guess, basis)
+    reference, _, _ = calculate_wavefunction(molecule, theory, "SAP", basis)
+    return f_score(guess, reference)
 
 
 def clean_table(table: pd.DataFrame):
@@ -39,11 +27,7 @@ def clean_table(table: pd.DataFrame):
 
 
 def reproduce_table(table: pd.DataFrame, theory_level: str, basis_set: str) -> pd.DataFrame:
-    singlets, non_singlets = load()
-    molecules = {molecule.name(): molecule for molecule in singlets + non_singlets}
-
-    assert len(singlets) == 222
-    assert len(non_singlets) == 37
+    molecules = {m.name(): m for m in load_molecules() if non_charged(m)}
 
     def score(molecule: str, guess: str):
         return score_molecule(molecules[molecule], theory_level, guess, basis_set)
