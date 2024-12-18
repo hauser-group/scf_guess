@@ -27,18 +27,8 @@ def load_molecule(path: str, disable_symmetry: bool = False) -> Molecule:
     return molecule
 
 
-def load(disable_symmetry: bool = False) -> tuple[list[Molecule], list[Molecule]]:
+def load_molecules(disable_symmetry: bool = False) -> list[Molecule]:
     base_path = importlib.resources.files(__package__) / "geometries"
     paths = iglob(f"{base_path}/**/*.xyz", recursive=True)
 
-    molecules = [load_molecule(path, disable_symmetry=disable_symmetry) for path in paths]
-    singlets, non_singlets = [], []
-
-    for molecule in molecules:
-        if molecule.molecular_charge() != 0:
-            continue
-
-        category = singlets if molecule.multiplicity() == 1 else non_singlets
-        category.append(molecule)
-
-    return singlets, non_singlets
+    return [load_molecule(path, disable_symmetry=disable_symmetry) for path in paths]
