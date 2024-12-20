@@ -56,7 +56,7 @@ def _find_close_energies(sequence: NDArray[float], delta: float = 1e-4) -> int:
 
 
 def _score_orbital_degeneracy(molecule: Molecule) -> int:
-    wfn, _, _ = calculate_wavefunction(molecule, theory_level="HF", guess="SAP", basis_set="pcseg-0")
+    wfn, _, _ = calculate_wavefunction(molecule, theory="HF", guess="SAP", basis="pcseg-0")
     score = 0
 
     for block, energies in enumerate(wfn.epsilon_a().to_array()):

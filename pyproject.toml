@@ -34,5 +34,6 @@ dev = [
 [tool.setuptools]
 packages = [
     "scf_guess",
-    "lehtola_2019"
+    "lehtola_2019",
+    "reproduce_lehtola_2019"
 ]
