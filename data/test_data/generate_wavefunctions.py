@@ -4,6 +4,45 @@ from scf_guess.io import load_molecule
 from pathlib import Path
 
 
+def evaluate_xyz(xyz_path, basisset="STO-3G"):
+    mol = load_molecule(xyz_path, disable_symmetry=True)
+    stability_analysis = "NONE"
+    if mol.multiplicity() != 1:
+        stability_analysis = "FOLLOW"
+    elif mol.natom() <= 30:
+        stability_analysis = "CHECK"
+    psi4.set_options(
+        {
+            "BASIS": basisset,
+            "REFERENCE": "RHF" if mol.multiplicity() == 1 else "UHF",
+            "GUESS": "SAP",
+            # Disable density fitting for highest possible accuracy and
+            # because stability analysis is not available for density fitted
+            # RHF wave functions:
+            "SCF_TYPE": "PK",
+            "STABILITY_ANALYSIS": stability_analysis,
+        }
+    )
+
+    try:
+        _, wfn = psi4.energy(name="hf", molecule=mol, return_wfn=True)
+    except psi4.ConvergenceError:
+        # Try converging with second order SCF method
+        psi4.set_options(
+            {
+                "SOSCF": True,
+                "SOSCF_START_CONVERGENCE": 1.0e-2,
+                "SOSCF_MAX_ITER": 50,
+            }
+        )
+        _, wfn = psi4.energy(name="hf", molecule=mol, return_wfn=True)
+    finally:
+        # Reset for the next example
+        psi4.core.clean_options()
+        psi4.core.clean()
+    return wfn
+
+
 def evaluate_geometries(basisset="STO-3G"):
     xyz_paths = glob("geometries/**/*.xyz")
 
@@ -20,41 +59,7 @@ def evaluate_geometries(basisset="STO-3G"):
             continue
         print(f"{dataset_name}/{name}")
 
-        mol = load_molecule(xyz_path)
-        stability_analysis = "NONE"
-        if mol.multiplicity() != 1:
-            stability_analysis = "FOLLOW"
-        elif mol.natom() <= 30:
-            stability_analysis = "CHECK"
-        psi4.set_options(
-            {
-                "BASIS": basisset,
-                "REFERENCE": "RHF" if mol.multiplicity() == 1 else "UHF",
-                "GUESS": "SAP",
-                # Disable density fitting for highest possible accuracy and
-                # because stability analysis is not available for density fitted
-                # RHF wave functions:
-                "SCF_TYPE": "PK",
-                "STABILITY_ANALYSIS": stability_analysis,
-            }
-        )
-
-        try:
-            _, wfn = psi4.energy(name="hf", molecule=mol, return_wfn=True)
-        except psi4.ConvergenceError:
-            # Try converging with second order SCF method
-            psi4.set_options(
-                {
-                    "SOSCF": True,
-                    "SOSCF_START_CONVERGENCE": 1.0e-2,
-                    "SOSCF_MAX_ITER": 40,
-                }
-            )
-            _, wfn = psi4.energy(name="hf", molecule=mol, return_wfn=True)
-        finally:
-            # Reset for the next example
-            psi4.core.clean_options()
-            psi4.core.clean()
+        wfn = evaluate_xyz(xyz_path, basisset)
         wfn.to_file(str(wfn_path))
 
 
