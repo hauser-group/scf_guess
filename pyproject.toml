@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "matplotlib",
     "pandas",
+    "numpy"
 ]
 
 
@@ -31,4 +32,8 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["scf_guess"]
+packages = [
+    "scf_guess",
+    "lehtola_2019",
+    "reproduce_lehtola_2019"
+]
