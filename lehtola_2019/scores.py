@@ -6,47 +6,47 @@ from collections import defaultdict
 
 tables = {
     "HF": {
-        "STO-3G": {
+        "sto-3g": {
             "singlet": 1,
-            "non_singlet": 2
+            "non-singlet": 2
         },
         "pcseg-0": {
             "singlet": 5,
-            "non_singlet": 6
+            "non-singlet": 6
         },
         "pcseg-1": {
             "singlet": 9,
-            "non_singlet": 10
+            "non-singlet": 10
         },
         "aug-pcseg-2": {
             "singlet": 13,
-            "non_singlet": 14
+            "non-singlet": 14
         }
     },
     "revTPSSh": {
-        "STO-3G": {
+        "sto-3g": {
             "singlet": 3,
-            "non_singlet": 4
+            "non-singlet": 4
         },
         "pcseg-0": {
             "singlet": 7,
-            "non_singlet": 8
+            "non-singlet": 8
         },
         "pcseg-1": {
             "singlet": 11,
-            "non_singlet": 12
+            "non-singlet": 12
         },
         "aug-pcseg-2": {
             "singlet": 15,
-            "non_singlet": 16
+            "non-singlet": 16
         }
     }
 }
 
 
-def load_table(theory_level: str, basis_set: str, variant: str) -> pd.DataFrame:
+def load_table(theory: str, basis: str, variant: str) -> pd.DataFrame:
     base_path = importlib.resources.files(__package__) / "scores" / "tables"
-    identifier = tables[theory_level][basis_set][variant]
+    identifier = tables[theory][basis][variant]
 
     table = pd.read_csv(f"{base_path}/{identifier}.txt", skiprows=1, sep=r"\s+")
 
@@ -56,11 +56,11 @@ def load_table(theory_level: str, basis_set: str, variant: str) -> pd.DataFrame:
     return table
 
 
-def calculate_statistics(theory_level: str, basis_set: str) -> pd.DataFrame:
+def calculate_statistics(theory: str, basis: str) -> pd.DataFrame:
     statistics = defaultdict(lambda: defaultdict(float))
 
-    for variant in tables[theory_level][basis_set].keys():
-        table = load_table(theory_level, basis_set, variant)
+    for variant in tables[theory][basis].keys():
+        table = load_table(theory, basis, variant)
 
         for guess in table.columns:
             statistics[guess][f"{variant}_min"] = np.min(table[guess].values)

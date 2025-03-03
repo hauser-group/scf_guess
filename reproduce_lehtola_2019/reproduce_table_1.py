@@ -1,33 +1,37 @@
-import psi4
 import pandas as pd
 
+from itertools import product
 from lehtola_2019.scores import load_table
-from common import build_table_1, reproduce_table, clean_table
+from lehtola_2019.molecules import paths
+from scf_guess_tools import Engine, Metric, PySCFEngine, Psi4Engine
+
+
+def reproduce(reference: pd.DataFrame, basis: str, engine: Engine):
+    table = pd.DataFrame(index=reference.index, columns=engine.guessing_schemes())
+    molecules = {m.name: m for m in [engine.load(path) for path in paths()]}
+
+    for name in table.index:
+        for scheme in table.columns:
+            molecule = molecules[name]
+            initial = engine.guess(molecule, basis, scheme)
+            final = engine.calculate(molecule, basis)
+            table.at[name, scheme] = engine.score(initial, final, Metric.F_SCORE)
+
+    return table
 
 
 if __name__ == "__main__":
     pd.options.display.float_format = '{:.3f}'.format
 
-    psi4.core.clean()
-    psi4.core.clean_options()
-    psi4.core.be_quiet()
+    theories = ["HF"]
+    bases = ["sto-3g"]
+    variants = ["singlet", "non-singlet"]
+    engines = [PySCFEngine(cache=False), Psi4Engine(cache=False)]
 
-    psi4.set_memory("20 GB")
-    psi4.set_num_threads(8)
+    for theory, basis, variant in product(theories, bases, variants):
+        reference = load_table(theory, basis, variant).iloc[:1]
+        print(f"{theory}/{basis}/{variant} reference:\n{reference}")
 
-    theory_level = "HF"
-    basis_set = "pcseg-0"
-
-    reference_table_singlet = load_table(theory_level, basis_set, "singlet")
-    clean_table(reference_table_singlet)
-    reference_table_non_singlet = load_table(theory_level, basis_set, "non_singlet")
-    clean_table(reference_table_non_singlet)
-    reference_table_1 = build_table_1(reference_table_singlet, reference_table_non_singlet)
-
-    reproduced_table_singlet = reproduce_table(reference_table_singlet, theory_level, basis_set)
-    reproduced_table_non_singlet = reproduce_table(reference_table_non_singlet, theory_level, basis_set)
-    reproduced_table_1 = build_table_1(reproduced_table_singlet, reproduced_table_non_singlet)
-
-    print(f"Table 1 {basis_set} built from supporting infos:\n{reference_table_1}")
-    print(f"Table 1 {basis_set} reproduced:\n{reproduced_table_1}")
-    print(f"Relative error:\n{reproduced_table_1/reference_table_1 - 1}")
+        for engine in [PySCFEngine, Psi4Engine]:
+            reproduced = reproduce(reference, basis, engine(cache=False))
+            print(f"{theory}/{basis}/{variant} via {engine.backend()}:\n{reproduced}")
